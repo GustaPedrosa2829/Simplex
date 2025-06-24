@@ -17,15 +17,8 @@ class Simplex:
         self.num_slack_surplus_artificial = 0 # Adicionado: para armazenar o número total de variáveis auxiliares
 
     def load_problem(self, filename):
-        """
-        Carrega o problema de Programação Linear de um arquivo de texto.
-        O formato esperado do arquivo é:
-        <num_vars> <num_restrictions>
-        <coeficientes_funcao_objetivo> (ex: c1 c2 c3 ...)
-        <coeficientes_restricao_1> <tipo_restricao_1> <rhs_1> (ex: a11 a12 <= b1)
-        ...
-        <coeficientes_restricao_N> <tipo_restricao_N> <rhs_N>
-        """
+        #Carrega o problema de Programação Linear de um arquivo de texto.
+        
         with open(filename, 'r') as file:
             # Lê o número de variáveis de decisão e restrições
             self.num_var, self.num_rest = map(int, file.readline().split())
@@ -53,33 +46,15 @@ class Simplex:
             self._create_initial_tableau(A, b, c, types)
     
     def _create_initial_tableau(self, A, b, c, types):
-        """
-        Cria o tableau inicial para o método Simplex.
-        
-        IMPORTANTE: Esta implementação é primariamente adequada para problemas com APENAS
-        restrições do tipo '<=' e valores 'b' não negativos, onde as variáveis de folga
-        formam naturalmente uma base factível inicial.
-
-        Para problemas com restrições '>=' ou '=', ou com 'b' negativo,
-        normalmente é necessário usar o Método Simplex de Duas Fases ou o Método Big M.
-        Esses métodos introduzem variáveis artificiais para encontrar uma base inicial factível.
-        A lógica atual para '>=' adicionará uma variável de excesso (-1),
-        mas não introduzirá uma variável artificial, o que pode levar a um tableau inicial
-        inactível para essas restrições.
-        """
-        
+      
         # Calcular o número total de variáveis auxiliares (folga/excesso/artificial)
         # Para esta versão simplificada, apenas folga/excesso são consideradas.
         self.num_slack_surplus_artificial = 0 # Agora é um atributo da instância
         for t in types:
             if t == '<=' or t == '>=':
                 self.num_slack_surplus_artificial += 1
-            # Se fosse implementar o Big M/Duas Fases, 'self.num_slack_surplus_artificial'
-            # também contaria as artificiais.
-            # E restrições '=' também adicionariam uma variável artificial.
-
-        # O tableau terá (num_restrições + 1 para função objetivo) linhas
-        # e (num_variáveis_decisão + num_aux_vars + 1 para RHS) colunas.
+           
+       
         self.tableau = np.zeros((self.num_rest + 1, self.num_var + self.num_slack_surplus_artificial + 1))
         
         # Preenche a primeira linha (linha 0) com os coeficientes da função objetivo.
@@ -103,11 +78,7 @@ class Simplex:
             elif types[i] == '>=':
                 # Adiciona uma variável de excesso com coeficiente -1
                 self.tableau[i + 1, current_aux_var_col_idx] = -1
-                # IMPORTANTE: Para restrições '>=', uma implementação completa do Simplex
-                # exigiria a adição de uma VARIÁVEL ARTIFICIAL (além da de excesso)
-                # e essa variável artificial seria a básica para essa linha.
-                # A variável de excesso permaneceria não básica.
-                # Sem a variável artificial, o tableau inicial pode ser infactível.
+               
                 current_aux_var_col_idx += 1
             # elif types[i] == '=':
             #     # Para restrições '=', apenas uma variável artificial seria adicionada
@@ -123,9 +94,8 @@ class Simplex:
         self.non_base = sorted(list(all_variables_indices - set(self.base)))
     
     def solve(self):
-        """
-        Executa o método Simplex para encontrar a solução ótima.
-        """
+        
+        #Executa o método Simplex para encontrar a solução ótima.
         iteration = 0
         max_iterations = 1000  # Limite para prevenir loops infinitos em problemas degenerados ou cíclicos
         
@@ -143,7 +113,6 @@ class Simplex:
             
             # 2. Seleção da Variável de Entrada (Coluna Pivô):
             # Escolhe a coluna com o menor (mais negativo) coeficiente na linha da função objetivo.
-            # Isso indica qual variável não básica, ao entrar na base, mais aumentará o valor da função objetivo.
             # A função np.argmin retorna o índice do menor valor.
             entering_col_idx = np.argmin(self.tableau[0, :-1])
             
@@ -201,20 +170,12 @@ class Simplex:
                     self.tableau[i, :] -= self.tableau[i, entering_col_idx] * self.tableau[leaving_row_idx, :]
     
     def _check_multiple_solutions(self):
-        """
-        Verifica se há múltiplas soluções ótimas.
-        Uma solução ótima múltipla existe se, na solução ótima,
-        alguma variável não básica tem coeficiente zero na linha da função objetivo.
-        """
         for j in self.non_base:
             if abs(self.tableau[0, j]) < EPSILON: # Se o coeficiente for (quase) zero
                 self.multiple_solutions = True
                 break
         
     def get_solution(self):
-        """
-        Retorna a solução encontrada pelo método Simplex.
-        """
         if self.unbounded:
             return "Problema ilimitado"
         
@@ -238,10 +199,6 @@ class Simplex:
             return "Solução não encontrada ou problema ainda não resolvido. Verifique o limite de iterações ou se o problema é infactível."
     
     def print_tableau(self):
-        """
-        Imprime o tableau atual, as variáveis básicas e não básicas.
-        Arredonda os valores para melhor legibilidade.
-        """
         print("Tableau:")
         print(np.round(self.tableau, 4)) # Arredonda para 4 casas decimais
         print(f"Variáveis básicas (índices): {self.base}")
@@ -251,33 +208,14 @@ class Simplex:
 
 # Exemplo de uso
 if __name__ == "__main__":
-    # Cria um arquivo de exemplo 'problema.txt' para teste.
-    # Exemplo:
-    # Maximizar: 3x1 + 2x2
-    # Sujeito a:
-    # 2x1 + x2 <= 10
-    # x1 + 3x2 <= 15
-    # x1, x2 >= 0
+    
     with open("problema.txt", "w") as f:
         f.write("2 2\n")         # 2 variáveis, 2 restrições
         f.write("3 2\n")         # Coeficientes da função objetivo (c)
         f.write("2 1 <= 10\n")   # Restrição 1: 2x1 + x2 <= 10
         f.write("1 3 <= 15\n")   # Restrição 2: x1 + 3x2 <= 15
 
-    # Para testar o caso de problema ilimitado (descomente e crie um problema adequado):
-    # with open("problema_ilimitado.txt", "w") as f:
-    #     f.write("1 1\n")        # 1 variável, 1 restrição
-    #     f.write("1\n")          # Max x1
-    #     f.write("-1 <= -1\n")   # Restrição: -x1 <= -1 (equivale a x1 >= 1) - esta restrição não impede o aumento de x1
 
-    # Para testar o caso de múltiplas soluções (descomente e crie um problema adequado):
-    # with open("problema_multiplas.txt", "w") as f:
-    #     f.write("2 2\n")        # 2 variáveis, 2 restrições
-    #     f.write("2 4\n")        # Max 2x1 + 4x2
-    #     f.write("1 2 <= 8\n")   # x1 + 2x2 <= 8
-    #     f.write("1 1 <= 6\n")   # x1 + x2 <= 6
-
-    # Inicializa o solver Simplex
     simplex = Simplex()
     
     # Carrega o problema do arquivo
